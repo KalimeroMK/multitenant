@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Tenant;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class TenantsMigrate extends Command
 {
@@ -45,22 +46,31 @@ class TenantsMigrate extends Command
      */
     public function migrate(Tenant $tenant): void
     {
-        $tenant->configure()->use();
+        DB::beginTransaction();
 
-        $this->line('');
-        $this->line('-----------------------------------------');
-        $this->info("Migrating Tenant #{$tenant->id} ({$tenant->name})");
-        $this->line('-----------------------------------------');
+        try {
+            $tenant->configure()->use();
 
-        $options = ['--force' => true];
+            $this->line('');
+            $this->line('-----------------------------------------');
+            $this->info("Migrating Tenant #{$tenant->id} ({$tenant->name})");
+            $this->line('-----------------------------------------');
 
-        if ($this->option('seed')) {
-            $options['--seed'] = true;
+            $options = ['--force' => true];
+
+            if ($this->option('seed')) {
+                $options['--seed'] = true;
+            }
+
+            $this->call(
+                $this->option('fresh') ? 'migrate:fresh' : 'migrate',
+                $options
+            );
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->error("Migration failed for Tenant #{$tenant->id} ({$tenant->name}): " . $e->getMessage());
         }
-
-        $this->call(
-            $this->option('fresh') ? 'migrate:fresh' : 'migrate',
-            $options
-        );
     }
 }
