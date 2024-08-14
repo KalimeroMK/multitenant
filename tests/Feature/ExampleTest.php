@@ -2,18 +2,28 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
+    protected function setUp(): void
     {
-        $response = $this->get('/');
+        parent::setUp();
 
-        $response->assertStatus(200);
+        config([
+            'database.connections.owner' => [
+                'driver' => 'sqlite',
+                'database' => ':memory:'
+            ],
+
+            'database.connections.tenant' => [
+                'driver' => 'sqlite',
+                'database' => ':memory:'
+            ]
+        ]);
+
+        $this->artisan('migrate', ['--database' => 'owner', '--path' => 'database/migrations/owner']);
+        $this->artisan('migrate', ['--database' => 'tenant']);
     }
+
 }
