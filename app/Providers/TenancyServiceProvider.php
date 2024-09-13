@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\ServiceProvider;
 
-class Tenancy extends ServiceProvider
+class TenancyServiceProvider extends ServiceProvider
 {
     /**
      * Register services.
@@ -46,9 +46,10 @@ class Tenancy extends ServiceProvider
      */
     protected function configureQueue(): void
     {
+        // Add tenant_id to the job payload
         Queue::createPayloadUsing(function () {
-            if ($this->app->bound('tenant')) {
-                $tenant = $this->app->make('tenant');
+            if (app()->bound('tenant')) {
+                $tenant = app()->make('tenant');
 
                 return ['tenant_id' => $tenant->id];
             }
@@ -56,8 +57,10 @@ class Tenancy extends ServiceProvider
             return [];
         });
 
+        // Restore tenant context when job is processing
         Event::listen(JobProcessing::class, function (JobProcessing $event) {
             $tenantId = $event->job->payload()['tenant_id'] ?? null;
+
             if ($tenantId) {
                 $tenant = Tenant::find($tenantId);
                 $tenant?->configure()->use();

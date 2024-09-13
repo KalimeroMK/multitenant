@@ -2,5 +2,5 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    App\Providers\Tenancy::class,
+    App\Providers\TenancyServiceProvider::class,
 ];

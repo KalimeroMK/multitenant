@@ -13,17 +13,16 @@ class ExampleTest extends TestCase
         config([
             'database.connections.owner' => [
                 'driver' => 'sqlite',
-                'database' => ':memory:'
+                'database' => ':memory:',
             ],
 
             'database.connections.tenant' => [
                 'driver' => 'sqlite',
-                'database' => ':memory:'
-            ]
+                'database' => ':memory:',
+            ],
         ]);
 
         $this->artisan('migrate', ['--database' => 'owner', '--path' => 'database/migrations/owner']);
         $this->artisan('migrate', ['--database' => 'tenant']);
     }
-
 }

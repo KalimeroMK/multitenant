@@ -3,38 +3,27 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
 class TenantInit extends Command
 {
     protected $signature = 'tenants:init';
+    protected $description = 'Create owner table where all domains for tenant app live';
 
-    protected $description = 'Create owner table where all domains for tenant app lives';
-
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
-     * Execute the console command.
-     */
     public function handle(): int
     {
         DB::setDefaultConnection('owner');
+        $path = database_path('migrations/owner'); // Custom migration path for the owner DB
+        $this->info('Running migrations from: ' . $path);
 
-        $path = 'Database/Migrations/Owner';
-        $this->info('Running migration from: '.$path);
+        try {
+            $this->call('migrate', ['--path' => $path, '--force' => true]);
+            $this->info('Migrations have been executed successfully.');
+        } catch (\Exception $e) {
+            $this->error('An error occurred: ' . $e->getMessage());
+            return 1; // Return non-zero for failure
+        }
 
-        // Running the migrations
-        Artisan::call('migrate', [
-            '--path' => $path,
-            '--force' => true, // Use --force to run migrations in production if necessary
-        ]);
-
-        $this->info('Migrations have been executed successfully.');
-
-        return 0;
+        return 0; // Return zero for success
     }
 }

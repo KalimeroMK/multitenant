@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * @property int    $id
+ * @property int $id
  * @property string $name
  * @property string $domain
  * @property string $database Name of the tenant's database.
@@ -17,11 +17,12 @@ use Illuminate\Support\Facades\Schema;
 class Tenant extends Model
 {
     use HasFactory;
+
     protected $fillable = [
-            'name',
-            'domain',
-            'database'
-        ];
+        'name',
+        'domain',
+        'database',
+    ];
 
     protected $connection = 'owner'; // Default connection for the owner database
 
@@ -38,10 +39,11 @@ class Tenant extends Model
         // Purge the 'tenant' connection to refresh its settings
         DB::purge('tenant');
 
-        // Consider scoping the cache flush if possible
+        // Clear tenant-specific cache if cache table exists
         if (Schema::hasTable('cache')) {
-            Cache::flush();
+            $this->clearTenantCache();
         }
+
         return $this;
     }
 
@@ -55,5 +57,36 @@ class Tenant extends Model
 
         return $this;
     }
-}
 
+    /**
+     * Clear cache specific to the tenant.
+     */
+    public function clearTenantCache(): void
+    {
+        // Get tenant-specific cache keys
+        $cacheKeys = Cache::get('tenant_'.$this->id.'_keys', []);
+
+        // Forget each cache key
+        foreach ($cacheKeys as $key) {
+            Cache::forget($key);
+        }
+
+        // Optionally remove the keys tracking itself
+        Cache::forget('tenant_'.$this->id.'_keys');
+    }
+
+    /**
+     * Add a tenant-specific cache key.
+     */
+    public function addCacheKey(string $key): void
+    {
+        // Get the current list of cache keys for the tenant
+        $cacheKeys = Cache::get('tenant_'.$this->id.'_keys', []);
+
+        // Add the new cache key
+        $cacheKeys[] = $key;
+
+        // Update the list in the cache
+        Cache::put('tenant_'.$this->id.'_keys', $cacheKeys);
+    }
+}
